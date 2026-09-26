@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Wi-Fi</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="card">
+
+            <div class="icon">teste</div>
+
+            <h1>Configurar Wi-Fi</h1>
+
+            <p class="subtitle">
+                Informe os dados da rede Wi-Fi para conectar o dispositivo.
+            </p>
+
+            <form id="wifiForm">
+
+                <label for="nomeRede">Nome da rede</label>
+
+                <input
+                    type="text"
+                    id="nomeRede"
+                    name="nomeRede"
+                    placeholder="Nome da rede Wi-Fi"
+                    autocomplete="off"
+                    required
+                >
+
+                <label for="senhaRede">Senha da rede</label>
+
+                <div class="password-box">
+                    <input
+                        type="password"
+                        id="senhaRede"
+                        name="senhaRede"
+                        placeholder="Senha da rede Wi-Fi"
+                        autocomplete="off"
+                        required
+                    >
+
+                    <button type="button" id="mostrarSenha">
+                        Mostrar
+                    </button>
+                </div>
+
+                <button type="submit" id="btnSalvar">
+                    Salvar configuração
+                </button>
+
+            </form>
+
+            <div id="mensagem"></div>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
