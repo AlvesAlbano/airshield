@@ -40,16 +40,13 @@ void Scd41::medir(){
 }
 
 uint32_t Scd41::co2(){
-    medir();
     return parametros.CO2;
 }
 
 float Scd41::temperatura(){
-    medir();
     return parametros.TEMPERATURA;
 }
 
 float Scd41::umidade(){
-    medir();
     return parametros.UMIDADE;
 }

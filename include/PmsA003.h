@@ -1,3 +1,5 @@
+#pragma once
+
 #include "PMserial.h"
 
 class PmsA003{

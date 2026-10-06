@@ -21,4 +21,6 @@ public:
     void loop();
     void pub(const char* topico,const char* payload);
     void sub(const char* topico);
+
+    bool estaConectado();
 };

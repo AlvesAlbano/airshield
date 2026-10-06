@@ -9,4 +9,5 @@ class WifiService {
 
         void conectar(const char* nomeRede, const char* senhaRede);
         void desconectar();
+        bool estaConectado();
 };

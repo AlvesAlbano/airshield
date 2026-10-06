@@ -17,19 +17,13 @@ void PmsA003::medir(){
 }
 
 uint16_t PmsA003::pm01(){
-    medir();
-
     return Pms.pm01;
 }
 
 uint16_t PmsA003::pm25(){
-    medir();
-
     return Pms.pm25;
 }
 
 uint16_t PmsA003::pm10(){
-    medir();
-
     return Pms.pm10;
 }

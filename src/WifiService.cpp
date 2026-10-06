@@ -20,3 +20,7 @@ void WifiService::conectar(const char* nomeRede,const char* senhaRede){
 void WifiService::desconectar(){
     WiFi.disconnect();
 }
+
+bool WifiService::estaConectado(){
+    return WiFi.isConnected();
+}

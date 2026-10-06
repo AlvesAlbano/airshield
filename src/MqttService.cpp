@@ -43,6 +43,10 @@ void MqttService::reconectar(){
     }
 }
 
+bool MqttService::estaConectado(){
+    return pubSubClient.connected();
+}
+
 void MqttService::loop(){
     reconectar();
     pubSubClient.loop();
