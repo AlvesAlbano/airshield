@@ -24,3 +24,11 @@ void WifiService::desconectar(){
 bool WifiService::estaConectado(){
     return WiFi.isConnected();
 }
+
+String WifiService::idMac(){
+    
+    String enderecoMac = WiFi.macAddress();
+    enderecoMac.replace(":","");
+    
+    return "dispositivo-" + enderecoMac;
+}

@@ -4,12 +4,11 @@
 
 #include "SensirionI2cScd4x.h"
 
-typedef struct {
+struct Parametros{
     uint16_t CO2;
     float TEMPERATURA;
     float UMIDADE;
-
-} Parametros;
+};
 
 class Scd41{
 private:

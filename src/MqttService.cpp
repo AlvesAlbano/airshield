@@ -25,7 +25,7 @@ void MqttService::init(){
 void MqttService::conectar(){
     String client_id = "esp32-airshield ";
     
-    client_id += String(WiFi.macAddress());
+    client_id += WiFi.macAddress();
     Serial.printf("The client %s connects to the public MQTT broker\n", client_id.c_str());
     
     if (pubSubClient.connect(client_id.c_str(),"", "")) {

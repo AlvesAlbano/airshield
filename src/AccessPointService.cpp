@@ -45,7 +45,7 @@ void AccessPointService::inserirCredenciaisRede(){
     DeserializationError deserializationError = deserializeJson(jsonDocument,corpo);
 
     if (deserializationError){
-        Serial.println("deu ruim");
+        Serial.println("deu ruim iniciar AP");
 
         return;
     }

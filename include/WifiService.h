@@ -3,11 +3,11 @@
 #include <WiFi.h>
 
 class WifiService {
-    private:
-    public:
-        WifiService();
-
-        void conectar(const char* nomeRede, const char* senhaRede);
-        void desconectar();
-        bool estaConectado();
+private:
+public:
+    WifiService();
+    void conectar(const char* nomeRede, const char* senhaRede);
+    void desconectar();
+    bool estaConectado();
+    String idMac();
 };
