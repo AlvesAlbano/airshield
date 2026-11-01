@@ -28,7 +28,7 @@ bool WifiService::estaConectado(){
 String WifiService::idMac(){
     
     String enderecoMac = WiFi.macAddress();
-    enderecoMac.replace(":","");
+    // enderecoMac.replace(":","");
     
-    return "dispositivo-" + enderecoMac;
+    return enderecoMac;
 }

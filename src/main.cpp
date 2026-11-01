@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <Ticker.h>
 
 #include "WifiService.h"
 #include "AccessPointService.h"
@@ -10,6 +9,9 @@
 #include "ColetorTelemetria.h"
 #include "Telemetria.h"
 #include "TelemetriaJsonBuilder.h"
+#include "IndiceQualidadeAr.h"
+#include "MonitorarQualidadeAmbiente.h"
+#include "BluetoothService.h"
 
 #include "Buzzer.h"
 #include "LedRgb.h"
@@ -35,6 +37,7 @@ MqttService mqtt;
 AccessPointService accessPoint;
 FicheiroService ficheiroService;
 MemoriaFlashService memoria;
+BluetoothService bluetooth;
 
 LedRgb ledRgb(GPIO_VERMELHO,GPIO_VERDE,GPIO_AZUL);
 Buzzer buzzer(GPIO_BUZZER);
@@ -44,12 +47,14 @@ Oled displayOled(Wire);
 PmsA003 pmsa003(RX,TX);
 
 ColetorTelemetria coletorTelemetria(sgp40,scd41,pmsa003);
+IndiceQualidadeAr indiceQualidadeAr;
+MonitorarQualidadeAmbiente monitoradorQualidadeAr;
 
-Ticker telemetriaTimer;
-
-volatile bool coletarTelemetria = false;
+String nomeDispositivo;
 
 volatile bool apertouBotao = false;
+bool qualidadeArBoa = true;
+QualidadeAr qualidadeArAnterior;
 volatile uint32_t ultimaIRQ = 0;
 
 void IRAM_ATTR iqrCallback() {
@@ -59,10 +64,6 @@ void IRAM_ATTR iqrCallback() {
     ultimaIRQ = agora;
     apertouBotao = true;
   }
-}
-
-void timerCallback(){
-  coletarTelemetria = true;
 }
 
 void silenciarBuzzer(){
@@ -77,16 +78,109 @@ void silenciarBuzzer(){
   }
 }
 
-void telemetria_display(Telemetria telemetria) {
+bool timerEnviarTelemetria(){
+  static unsigned long tempoAnterior = 0;
+  const unsigned long INTERVALO_TELEMETRIA = 1000;
+
+  if ((millis() - tempoAnterior) >= INTERVALO_TELEMETRIA){
+    tempoAnterior = millis();
+
+    return true;
+  }
+
+  return false;
+}
+
+const char* transcreverQualidadeAr(QualidadeAr qualidadeAr){
+  switch (qualidadeAr) {
+    case BOA:
+      return "BOA";
+      break;
+    case MODERADA:
+      return "MODERADA";
+      break;
+    case RUIM:
+      return "RUIM";
+      break;
+    case MUITO_RUIM:
+      return "MUITO RUIM";
+      break;
+    case PESSIMA:
+      return "PÉSSIMA";
+      break;
+    default:
+      return "N/A";
+  }
+}
+
+void qualidadeArDisplay(IndicesQualidadeResultado indicesQualidadeResultado){
+  static unsigned long tempoAnterior = 0;
+  static int pagina = 0;
+
+  const unsigned long INTERVALO_PAGINACAO_DISPLAY = 3000;
+  const int TOTAL_PAGINAS_DISPLAY = 2;
+
+  if (millis() - tempoAnterior >= INTERVALO_PAGINACAO_DISPLAY) {
+    tempoAnterior = millis();
+    pagina = (pagina + 1) % TOTAL_PAGINAS_DISPLAY;
+  }
+
+  displayOled.limpar();
+
+  switch (pagina) {
+
+    case 0:
+      
+      displayOled.texto(
+        ("QUALIDADE COV: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_COV)) + " ppm").c_str(),
+        0, 0
+      );
+    
+      displayOled.texto(
+        ("QUALIDADE CO2: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_CO2)) + " ppm").c_str(),
+        0, 20
+      );
+
+      displayOled.texto(
+        ("QUALIDADE UMIDADE: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_UMIDADE)) + " ppm").c_str(),
+        0, 40
+      );
+
+      break;
+
+    case 1:
+      
+      displayOled.texto(
+        ("QUALIDADE PM10: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_PM10)) + " ppm").c_str(),
+        0, 0
+      );  
+    
+      displayOled.texto(
+        ("QUALIDADE PM2.5: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_PM25)) + " ppm").c_str(),
+        0, 20
+      );
+
+      displayOled.texto(
+        ("QUALIDADE PM1.0: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_PM01)) + " ppm").c_str(),
+        0, 40
+      );
+      break;
+  }
+
+  displayOled.atualizar();
+}
+
+void telemetriaDisplay(Telemetria telemetria,IndicesQualidadeResultado indicesQualidadeResultado) {
 
   static unsigned long tempoAnterior = 0;
   static int pagina = 0;
 
-  const unsigned long intervalo = 3000;
+  const unsigned long INTERVALO_PAGINACAO_DISPLAY = 3000;
+  const int TOTAL_PAGINAS_DISPLAY = 5;
 
-  if (millis() - tempoAnterior >= intervalo) {
+  if (millis() - tempoAnterior >= INTERVALO_PAGINACAO_DISPLAY) {
     tempoAnterior = millis();
-    pagina = (pagina + 1) % 3;
+    pagina = (pagina + 1) % TOTAL_PAGINAS_DISPLAY;
   }
 
   displayOled.limpar();
@@ -133,9 +227,130 @@ void telemetria_display(Telemetria telemetria) {
         0, 0
       );
       break;
+
+    case 3:
+      
+      displayOled.texto(
+        ("QUALIDADE COV: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_COV)) + " ppm").c_str(),
+        0, 0
+      );
+    
+      displayOled.texto(
+        ("QUALIDADE CO2: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_CO2)) + " ppm").c_str(),
+        0, 20
+      );
+
+      displayOled.texto(
+        ("QUALIDADE UMIDADE: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_UMIDADE)) + " ppm").c_str(),
+        0, 40
+      );
+
+      break;
+
+    case 4:
+      
+      displayOled.texto(
+        ("QUALIDADE PM10: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_PM10)) + " ppm").c_str(),
+        0, 0
+      );  
+    
+      displayOled.texto(
+        ("QUALIDADE PM2.5: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_PM25)) + " ppm").c_str(),
+        0, 20
+      );
+
+      displayOled.texto(
+        ("QUALIDADE PM1.0: " + String(transcreverQualidadeAr(indicesQualidadeResultado.QUALIDADE_PM01)) + " ppm").c_str(),
+        0, 40
+      );
+      break;
   }
 
   displayOled.atualizar();
+}
+
+void informacoesAmbienteDisplay(Telemetria telemetria,IndicesQualidadeResultado indicesQualidadeResultado){
+  if (qualidadeArBoa){
+    telemetriaDisplay(telemetria,indicesQualidadeResultado);
+  } else {
+    qualidadeArDisplay(indicesQualidadeResultado);
+  }
+}
+
+void monitorarQualidadeAr(IndicesQualidadeResultado indicesQualidadeResultado){
+
+  QualidadeAr qualidadeArAtual = monitoradorQualidadeAr.obterQualidadeGeral(indicesQualidadeResultado);
+
+  Serial.println(qualidadeArAtual);
+  qualidadeArBoa = (qualidadeArAtual == BOA);
+
+  if (qualidadeArAtual != qualidadeArAnterior){
+    Serial.println("apitou ai");
+    buzzer.alertar(3);
+  }
+
+  qualidadeArAnterior = qualidadeArAtual;
+
+  switch (qualidadeArAtual) {
+    case BOA:
+      ledRgb.ligar(0,255,0);
+      break;
+    case MODERADA:
+      ledRgb.ligar(255,255,0);
+      break;
+    case RUIM:
+      ledRgb.ligar(255,165,0);
+      break;
+    case MUITO_RUIM:
+      ledRgb.ligar(255,165,0);
+      break;
+    case PESSIMA:
+      ledRgb.ligar(128,165,32);
+      break;
+    default:
+      ledRgb.ligar(255,255,255);
+  }
+}
+
+void enviarTelemetria(Telemetria telemetria,IndicesQualidadeResultado indicesQualidadeResultado){
+  Serial.println("foi");
+  
+  TelemetriaJsonBuilder telemetriaJsonBuilder;
+
+  telemetriaJsonBuilder.setCO2(telemetria.CO2);
+  telemetriaJsonBuilder.setTemperatura(telemetria.TEMPERATURA);
+  telemetriaJsonBuilder.setUmidade(telemetria.UMIDADE);
+    
+  telemetriaJsonBuilder.setCOV(telemetria.INDICE_COV);
+
+  telemetriaJsonBuilder.setPm01(telemetria.PM01);
+  telemetriaJsonBuilder.setPm10(telemetria.PM10);
+  telemetriaJsonBuilder.setPm25(telemetria.PM25);
+
+  indiceQualidadeAr.calcularIndiceUmidade(telemetria.UMIDADE);
+  indiceQualidadeAr.calcularIndiceCov(telemetria.INDICE_COV);
+  indiceQualidadeAr.calcularIndiceCo2(telemetria.CO2);
+  indiceQualidadeAr.calcularIndicePm01(telemetria.PM01);
+  indiceQualidadeAr.calcularIndicePm25(telemetria.PM25);
+  indiceQualidadeAr.calcularIndicePm10(telemetria.PM10);
+
+  telemetriaJsonBuilder.setIndiceUmidade(indicesQualidadeResultado.QUALIDADE_UMIDADE);
+  telemetriaJsonBuilder.setIndiceCov(indicesQualidadeResultado.QUALIDADE_COV);
+  telemetriaJsonBuilder.setIndiceCo2(indicesQualidadeResultado.QUALIDADE_CO2);
+  telemetriaJsonBuilder.setIndicePm01(indicesQualidadeResultado.QUALIDADE_PM01);
+  telemetriaJsonBuilder.setIndicePm25(indicesQualidadeResultado.QUALIDADE_PM25);
+  telemetriaJsonBuilder.setIndicePm10(indicesQualidadeResultado.QUALIDADE_PM10);
+
+  const char* json = telemetriaJsonBuilder.build();
+    
+  Serial.println(json);
+  // Serial.println(wifi.idMac());
+
+  String topico = "airshield/" + wifi.idMac() + "/dados-ambiente";
+  Serial.println(topico);
+  mqtt.pub(topico.c_str(),json);
+  Serial.println("acabou");
+
 }
 
 void initComponentes(){
@@ -170,9 +385,12 @@ void setup() {
       memoria.lerString("SENHA").c_str()
     );
 
+    nomeDispositivo = "airshield-" + wifi.idMac();
+    bluetooth.init(nomeDispositivo);
+
     initComponentes();
 
-    telemetriaTimer.attach(1.0,timerCallback);
+    // telemetriaTimer.attach(1.0,timerCallback);
     mqtt.init();
   }
 }
@@ -188,34 +406,22 @@ void loop() {
     silenciarBuzzer();
   }
 
-  if (coletarTelemetria && wifi.estaConectado() && mqtt.estaConectado()){
-    coletarTelemetria = false;
-    Serial.println("foi");
-    
-    Telemetria telemetria = coletorTelemetria.coletarDados();
-    TelemetriaJsonBuilder telemetriaJsonBuilder;
+  if (bluetooth.taConectado()){
 
-    telemetriaJsonBuilder.setCO2(telemetria.CO2);
-    telemetriaJsonBuilder.setTemperatura(telemetria.TEMPERATURA);
-    telemetriaJsonBuilder.setUmidade(telemetria.UMIDADE);
-    
-    telemetriaJsonBuilder.setCOV(telemetria.INDICE_COV);
+    bluetooth.enviarMensagem(nomeDispositivo);
+    Serial.println(nomeDispositivo);
+    Serial.println("ta indo o ble");
+  }
 
-    telemetriaJsonBuilder.setPm01(telemetria.PM01);
-    telemetriaJsonBuilder.setPm10(telemetria.PM10);
-    telemetriaJsonBuilder.setPm25(telemetria.PM25);
+  Telemetria telemetria = coletorTelemetria.coletarDados();
+  IndicesQualidadeResultado indicesQualidadeResultado = indiceQualidadeAr.getIndicesQualidadeResulado();
 
-    const char* json = telemetriaJsonBuilder.build();
-    
-    telemetria_display(telemetria);
+  monitorarQualidadeAr(indicesQualidadeResultado);
+  
+  informacoesAmbienteDisplay(telemetria,indicesQualidadeResultado);
 
-    Serial.println(json);
-    Serial.println(wifi.idMac());
-
-    String topico = "airshield/" + wifi.idMac() + "/dados-ambiente";
-    Serial.println(topico);
-    mqtt.pub(topico.c_str(),json);
-    Serial.println("acabou");
+  if (timerEnviarTelemetria() && wifi.estaConectado() && mqtt.estaConectado()){
+    enviarTelemetria(telemetria,indicesQualidadeResultado);
   }
 
   mqtt.loop();
