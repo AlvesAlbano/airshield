@@ -1,10 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#include "WifiService.h"
 #include "AccessPointService.h"
 #include "MqttService.h"
-#include "FicheiroService.h"
 #include "MemoriaFlashService.h"
 #include "ColetorTelemetria.h"
 #include "Telemetria.h"
@@ -32,13 +30,9 @@
 #define TX 17
 #define RX 16
 
-
-WifiService wifi;
-#define ID_MAC wifi.idMac()
-
 MqttService mqtt;
 AccessPointService accessPoint;
-FicheiroService ficheiroService;
+#define ENDERECO_MAC accessPoint.getEnderecoMac()
 MemoriaFlashService memoria;
 BluetoothService bluetooth;
 
@@ -63,9 +57,6 @@ bool conectado = false;
 QualidadeAr qualidadeArAnterior;
 volatile uint32_t ultimaIRQ = 0;
 
-String ssid;
-String senha;
-
 void IRAM_ATTR iqrCallback() {
   uint32_t agora = micros();
 
@@ -82,7 +73,6 @@ void silenciarBuzzer(){
     interrupts();
 
     buzzer.silenciado = !buzzer.silenciado;
-    Serial.println(buzzer.silenciado);
     Serial.println("Botao pressionado");
   }
 }
@@ -104,19 +94,14 @@ const char* transcreverQualidadeAr(QualidadeAr qualidadeAr){
   switch (qualidadeAr) {
     case BOA:
       return "BOA";
-      break;
     case MODERADA:
       return "MODERADA";
-      break;
     case RUIM:
       return "RUIM";
-      break;
     case MUITO_RUIM:
       return "MUITO RUIM";
-      break;
     case PESSIMA:
       return "PÉSSIMA";
-      break;
     default:
       return "N/A";
   }
@@ -290,7 +275,7 @@ void monitorarQualidadeAr(IndicesQualidadeResultado indicesQualidadeResultado){
 
   QualidadeAr qualidadeArAtual = monitoradorQualidadeAr.obterQualidadeGeral(indicesQualidadeResultado);
 
-  Serial.println(qualidadeArAtual);
+  // Serial.println(qualidadeArAtual);
   qualidadeArBoa = (qualidadeArAtual == BOA);
 
   if (qualidadeArAtual != qualidadeArAnterior){
@@ -355,11 +340,9 @@ void enviarTelemetria(Telemetria telemetria,IndicesQualidadeResultado indicesQua
   Serial.println(json);
   // Serial.println(wifi.idMac());
 
-  String topico = "airshield/" + wifi.idMac() + "/dados-ambiente";
+  String topico = "airshield/" + String(ENDERECO_MAC) + "/dados-ambiente";
   Serial.println(topico);
   mqtt.pub(topico.c_str(),json);
-  Serial.println("acabou");
-
 }
 
 void initComponentes(){
@@ -386,25 +369,25 @@ void setup() {
 
   if (memoria.existe("SSID") && memoria.existe("SENHA")) {
 
-    ssid = memoria.lerString("SSID");
-    senha = memoria.lerString("SENHA");
+    String ssid = memoria.lerString("SSID");
+    String senha = memoria.lerString("SENHA");
 
     Serial.println(ssid);
     Serial.println(senha);
-    conectado = wifi.conectar(
+
+    conectado = accessPoint.conectar(
       ssid.c_str(),
       senha.c_str()
     );
   }
   
   if (!conectado) {
-    accessPoint.init(ID_MAC);
-    ApAtivo = true;
-
-    Serial.println("Conecte-se ao AP: airshield-wifi.com");
-  
+    Serial.println("Entra ai: airshield.com <--------------------");
+    accessPoint.initPortalCativo(ENDERECO_MAC);
+    accessPoint.salvarCredenciaisRede();
   } 
-  nomeDispositivo = "airshield-" + ID_MAC;
+
+  nomeDispositivo = "airshield-" + String(ENDERECO_MAC);
   
   bluetooth.init(nomeDispositivo);
   mqtt.init();
@@ -426,17 +409,13 @@ void loop() {
     Serial.println("ta indo o ble");
   }
 
-  if (ApAtivo){
-    accessPoint.loop();
-    Serial.println("n tá conectado ao wifi");
-  }
-
-  if (wifi.estaConectado() && !mqtt.estaConectado()){
+  if (accessPoint.estaConectado() && !mqtt.estaConectado()){
     mqtt.reconectar();
   }
 
-  if (!wifi.estaConectado()){
-    Serial.println("conecta ai: 192.168.4.1");
+  if (!accessPoint.estaConectado()){
+    Serial.println("Entra ai: airshield.com");
+    accessPoint.initPortalCativo(ENDERECO_MAC);
   }
 
   Telemetria telemetria = coletorTelemetria.coletarDados();
@@ -446,7 +425,7 @@ void loop() {
   
   informacoesAmbienteDisplay(telemetria,indicesQualidadeResultado);
   
-  if (timerEnviarTelemetria() && wifi.estaConectado() && mqtt.estaConectado()){
+  if (timerEnviarTelemetria() && accessPoint.estaConectado() && mqtt.estaConectado()){
     enviarTelemetria(telemetria,indicesQualidadeResultado);
   }
 
