@@ -10,7 +10,7 @@
 
 class AccessPointService{
 private:
-    const char* REDE_AP = "teste";
+    const char* REDE_AP = "airshield_";
     const char* SENHA_AP = "12345678";
     const int DNS_PORT = 53;
 
@@ -25,7 +25,7 @@ private:
 public:
     AccessPointService();
     
-    void init();
+    void init(String idMac);
     void inserirCredenciaisRede();
     void loop();
 };

@@ -32,7 +32,10 @@
 #define TX 17
 #define RX 16
 
+
 WifiService wifi;
+#define ID_MAC wifi.idMac()
+
 MqttService mqtt;
 AccessPointService accessPoint;
 FicheiroService ficheiroService;
@@ -54,8 +57,14 @@ String nomeDispositivo;
 
 volatile bool apertouBotao = false;
 bool qualidadeArBoa = true;
+bool ApAtivo = false;
+bool conectado = false;
+
 QualidadeAr qualidadeArAnterior;
 volatile uint32_t ultimaIRQ = 0;
+
+String ssid;
+String senha;
 
 void IRAM_ATTR iqrCallback() {
   uint32_t agora = micros();
@@ -372,35 +381,39 @@ void initComponentes(){
 }
 
 void setup() {
+
   Serial.begin(115200);
-  if (!(memoria.existe("SSID") || memoria.existe("SENHA"))){
-    accessPoint.init();
-  } else {
 
-    Serial.println("tá indo");
-    delay(1000);
+  if (memoria.existe("SSID") && memoria.existe("SENHA")) {
 
-    wifi.conectar(
-      memoria.lerString("SSID").c_str(),
-      memoria.lerString("SENHA").c_str()
+    ssid = memoria.lerString("SSID");
+    senha = memoria.lerString("SENHA");
+
+    Serial.println(ssid);
+    Serial.println(senha);
+    conectado = wifi.conectar(
+      ssid.c_str(),
+      senha.c_str()
     );
-
-    nomeDispositivo = "airshield-" + wifi.idMac();
-    bluetooth.init(nomeDispositivo);
-
-    initComponentes();
-
-    // telemetriaTimer.attach(1.0,timerCallback);
-    mqtt.init();
   }
+  
+  if (!conectado) {
+    accessPoint.init(ID_MAC);
+    ApAtivo = true;
+
+    Serial.println("Conecte-se ao AP: airshield-wifi.com");
+  
+  } 
+  nomeDispositivo = "airshield-" + ID_MAC;
+  
+  bluetooth.init(nomeDispositivo);
+  mqtt.init();
+  
+  initComponentes();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  
-  if (!wifi.estaConectado()){
-    accessPoint.init();
-  }
   
   if (apertouBotao){
     silenciarBuzzer();
@@ -413,13 +426,26 @@ void loop() {
     Serial.println("ta indo o ble");
   }
 
+  if (ApAtivo){
+    accessPoint.loop();
+    Serial.println("n tá conectado ao wifi");
+  }
+
+  if (wifi.estaConectado() && !mqtt.estaConectado()){
+    mqtt.reconectar();
+  }
+
+  if (!wifi.estaConectado()){
+    Serial.println("conecta ai: 192.168.4.1");
+  }
+
   Telemetria telemetria = coletorTelemetria.coletarDados();
   IndicesQualidadeResultado indicesQualidadeResultado = indiceQualidadeAr.getIndicesQualidadeResulado();
-
+  
   monitorarQualidadeAr(indicesQualidadeResultado);
   
   informacoesAmbienteDisplay(telemetria,indicesQualidadeResultado);
-
+  
   if (timerEnviarTelemetria() && wifi.estaConectado() && mqtt.estaConectado()){
     enviarTelemetria(telemetria,indicesQualidadeResultado);
   }

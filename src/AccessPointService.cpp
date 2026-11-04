@@ -4,26 +4,47 @@ AccessPointService::AccessPointService():webServer(80){
 
 }
 
-void AccessPointService::init(){
+void AccessPointService::init(String idMac){
 
     ficheiroService.init();
-    WiFi.softAP(REDE_AP,SENHA_AP);
 
-    Serial.println("AP Iniciado");
+    WiFi.mode(WIFI_AP);
+    // WiFi.mode(WIFI_AP_STA);
 
-    Serial.printf("endereço IP: %s\n",WiFi.softAPIP().toString());
-    
-    dnsServer.start(DNS_PORT,"*",WiFi.softAPIP());
-    
+    String redeAp = REDE_AP + idMac;
+    Serial.println(redeAp);
+    Serial.println(redeAp.length());
+
+    bool iniciado = WiFi.softAP(redeAp, SENHA_AP);
+
+    if (!iniciado) {
+        Serial.println("Erro ao iniciar Access Point");
+        return;
+    }
+
+    Serial.println("AP iniciado!");
+
+    Serial.printf(
+        "Endereco IP: %s\n",
+        WiFi.softAPIP().toString().c_str()
+    );
+
+    dnsServer.start(
+        DNS_PORT,
+        "*",
+        WiFi.softAPIP()
+    );
+
     carregarPagina();
-    
-    webServer.on("/salvar",HTTP_POST,[this](){
+
+    webServer.on("/salvar", HTTP_POST, [this](){
         inserirCredenciaisRede();
     });
 
     captivePortal();
 
     webServer.begin();
+
     Serial.println("Servidor HTTP iniciado");
 }
 
@@ -76,6 +97,9 @@ void AccessPointService::inserirCredenciaisRede(){
         "deu bom"
     );
 
+    Serial.println("Reiniciando....");
+    delay(3000);
+    ESP.restart();
 }
 
 void AccessPointService::carregarPagina(){
@@ -145,126 +169,109 @@ void AccessPointService::carregarPagina(){
 
 void AccessPointService::captivePortal() {
 
+    auto redirectToRoot = [this]() {
+
+        Serial.printf(
+            "[CAPTIVE] Requisicao: %s\n",
+            webServer.uri().c_str()
+        );
+
+        webServer.sendHeader(
+            "Location",
+            "http://192.168.4.1/",
+            true
+        );
+
+        webServer.sendHeader(
+            "Cache-Control",
+            "no-cache, no-store, must-revalidate"
+        );
+
+        webServer.send(
+            302,
+            "text/plain",
+            ""
+        );
+    };
+
     // Android
-    webServer.on(
-        "/generate_204",
-        HTTP_GET,
-        [this]() {
-
-            webServer.sendHeader(
-                "Location",
-                "/",
-                true
-            );
-
-            webServer.send(
-                302,
-                "text/plain",
-                ""
-            );
-        }
-    );
-
+    webServer.on("/generate_204", HTTP_GET, redirectToRoot);
+    webServer.on("/gen_204", HTTP_GET, redirectToRoot);
 
     // Apple
-    webServer.on(
-        "/hotspot-detect.html",
-        HTTP_GET,
-        [this]() {
-
-            webServer.sendHeader(
-                "Location",
-                "/",
-                true
-            );
-
-            webServer.send(
-                302,
-                "text/plain",
-                ""
-            );
-        }
-    );
+    webServer.on("/hotspot-detect.html", HTTP_GET, redirectToRoot);
+    webServer.on("/library/test/success.html", HTTP_GET, redirectToRoot);
 
     // Windows
-    webServer.on(
-        "/connecttest.txt",
-        HTTP_GET,
-        [this]() {
-
-            webServer.sendHeader(
-                "Location",
-                "/",
-                true
-            );
-
-            webServer.send(
-                302,
-                "text/plain",
-                ""
-            );
-        }
-    );
-
-
-    webServer.on(
-        "/ncsi.txt",
-        HTTP_GET,
-        [this]() {
-
-            webServer.sendHeader(
-                "Location",
-                "/",
-                true
-            );
-
-            webServer.send(
-                302,
-                "text/plain",
-                ""
-            );
-        }
-    );
+    webServer.on("/connecttest.txt", HTTP_GET, redirectToRoot);
+    webServer.on("/ncsi.txt", HTTP_GET, redirectToRoot);
 
     // Favicon
     webServer.on(
         "/favicon.ico",
         HTTP_GET,
         [this]() {
-
-            webServer.send(
-                204,
-                "text/plain",
-                ""
-            );
+            webServer.send(204, "text/plain", "");
         }
     );
 
     // Qualquer outra URL
-    webServer.onNotFound(
-        [this]() {
+    webServer.onNotFound([this]() {
 
-            Serial.println();
-            Serial.println("REQUISICAO NAO ENCONTRADA:");
-            Serial.print("URI: ");
-            Serial.println(webServer.uri());
+        Serial.println("\n========== CAPTIVE PORTAL ==========");
 
-            webServer.sendHeader(
-                "Location",
-                "/",
-                true
-            );
+        Serial.printf(
+            "URI: %s\n",
+            webServer.uri().c_str()
+        );
+
+        Serial.printf(
+            "IP: %s\n",
+            webServer.client().remoteIP().toString().c_str()
+        );
+
+        Serial.println("====================================");
+
+        // Evita responder HTML para requisicoes POST desconhecidas
+        if (webServer.method() != HTTP_GET) {
 
             webServer.send(
-                302,
+                404,
                 "text/plain",
-                ""
+                "Not Found"
             );
+
+            return;
         }
-    );
+
+        String index = ficheiroService.buscarArquivo("/index.html");
+
+        if (index.isEmpty()) {
+
+            webServer.send(
+                404,
+                "text/plain",
+                "index.html nao encontrado"
+            );
+
+            return;
+        }
+
+        webServer.sendHeader(
+            "Cache-Control",
+            "no-cache, no-store, must-revalidate"
+        );
+
+        webServer.send(
+            200,
+            "text/html; charset=utf-8",
+            index
+        );
+    });
 }
 
 void AccessPointService::loop(){
     dnsServer.processNextRequest();
     webServer.handleClient();
+    delay(2);
 }

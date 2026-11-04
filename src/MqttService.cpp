@@ -19,8 +19,6 @@ void MqttService::init(){
     pubSubClient.setServer(MQTT_SERVER,MQTT_PORT);
     pubSubClient.setCallback(callback);
     pubSubClient.setBufferSize(1024);
-
-    conectar();
 }
 
 void MqttService::conectar(){
