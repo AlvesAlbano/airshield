@@ -2,12 +2,14 @@
 
 #include "ArduinoJson.h"
 #include "Telemetria.h"
-#include "IndiceQualidadeAr.h"
+#include "QualidadeAr.h"
+#include "MonitorarQualidadeAmbiente.h"
 
 class TelemetriaJsonBuilder{
 private:
     Telemetria telemetria;
     IndicesQualidadeResultado indicesQualidadeResultado;
+    MonitorarQualidadeAmbiente monitorarQualidadeAmbiente;
 
     String json = "";
 public:
@@ -27,6 +29,7 @@ public:
     void setIndicePm01(QualidadeAr valor);
     void setIndicePm25(QualidadeAr valor);
     void setIndicePm10(QualidadeAr valor);
+    void setQualidadeGeralDoAr(IndiceQualidadeAr indiceQualidadeAr);
 
     const char* build();
 };

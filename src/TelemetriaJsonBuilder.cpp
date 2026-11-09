@@ -52,7 +52,6 @@ void TelemetriaJsonBuilder::setIndicePm10(QualidadeAr valor){
     indicesQualidadeResultado.QUALIDADE_PM10 = valor;
 }
 
-
 const char* TelemetriaJsonBuilder::build(){
     JsonDocument jsonDocument;
 
@@ -67,13 +66,16 @@ const char* TelemetriaJsonBuilder::build(){
     medidas["pm 2.5"] = telemetria.PM25;
 
     JsonObject indicesQualidade = jsonDocument["indices_qualidade"].to<JsonObject>();
-
+    
     indicesQualidade["qualidade_umidade"] = indicesQualidadeResultado.QUALIDADE_UMIDADE; 
     indicesQualidade["qualidade_cov"] = indicesQualidadeResultado.QUALIDADE_COV; 
     indicesQualidade["qualidade_co2"] = indicesQualidadeResultado.QUALIDADE_CO2; 
     indicesQualidade["qualidade_pm01"] = indicesQualidadeResultado.QUALIDADE_PM01; 
     indicesQualidade["qualidade_pm25"] = indicesQualidadeResultado.QUALIDADE_PM25; 
-    indicesQualidade["qualidade_pm10"] = indicesQualidadeResultado.QUALIDADE_PM10; 
+    indicesQualidade["qualidade_pm10"] = indicesQualidadeResultado.QUALIDADE_PM10;
+    
+    QualidadeAr qualidadeDoArGeral = monitorarQualidadeAmbiente.obterQualidadeGeral(indicesQualidadeResultado);
+    indicesQualidade["qualidade_geral"] = qualidadeDoArGeral;
 
     serializeJson(jsonDocument,json);
 

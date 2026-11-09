@@ -287,19 +287,19 @@ void monitorarQualidadeAr(IndicesQualidadeResultado indicesQualidadeResultado){
 
   switch (qualidadeArAtual) {
     case BOA:
-      ledRgb.ligar(0,255,0);
+      ledRgb.ligar(78, 166, 44);
       break;
     case MODERADA:
-      ledRgb.ligar(255,255,0);
+      ledRgb.ligar(247, 212, 0);
       break;
     case RUIM:
-      ledRgb.ligar(255,165,0);
+      ledRgb.ligar(236, 137, 36);
       break;
     case MUITO_RUIM:
-      ledRgb.ligar(255,165,0);
+      ledRgb.ligar(203, 9, 18);
       break;
     case PESSIMA:
-      ledRgb.ligar(128,165,32);
+      ledRgb.ligar(149, 0, 96);
       break;
     default:
       ledRgb.ligar(255,255,255);
