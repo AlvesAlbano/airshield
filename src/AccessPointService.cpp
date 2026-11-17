@@ -4,18 +4,37 @@ AccessPointService::AccessPointService(){
 
 }
 
-void AccessPointService::initPortalCativo(String enderecoMac){
-    
+void AccessPointService::initPortalCativo(String enderecoMac) {
+
     String redeAp = REDE_AP + enderecoMac;
+
+    wifiManager.setConfigPortalBlocking(true);
     wifiManager.setCaptivePortalEnable(true);
-    
-    wifiManager.startConfigPortal(
+
+    // Inicia o AP e o portal de configuração
+    bool sucesso = wifiManager.startConfigPortal(
         redeAp.c_str(),
         SENHA_AP
     );
+
+    if (sucesso) {
+        Serial.println("Wi-Fi configurado com sucesso!");
+
+        salvarCredenciaisRede();
+    } else {
+        Serial.println("Falha ao configurar Wi-Fi!");
+    }
 }
 
-bool AccessPointService::conectar(String ssid,String senha){
+bool AccessPointService::conectar(String ssid, String senha) {
+
+    WiFi.mode(WIFI_STA);
+
+    // return wifiManager.connectWifi(
+    //     ssid.c_str(),
+    //     senha.c_str()
+    // );
+
     return wifiManager.autoConnect(
         ssid.c_str(),
         senha.c_str()

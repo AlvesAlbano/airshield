@@ -18,7 +18,7 @@ void LedRgb::ligar(uint8_t valorVermelho,uint8_t valorVerde,uint8_t valorAzul){
 }
 
 void LedRgb::desligar(){
-    analogWrite(GPIO_VERMELHO,0);
-    analogWrite(GPIO_VERDE,0);
-    analogWrite(GPIO_AZUL,0);
+    analogWrite(GPIO_VERMELHO,255);
+    analogWrite(GPIO_VERDE,255);
+    analogWrite(GPIO_AZUL,255);
 }

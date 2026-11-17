@@ -21,6 +21,7 @@ int32_t Sgp40::indiceCOV(float temperatura,float umidade){
     uint16_t erro = sgp40.measureRawSignal(humidityTicks,temperatureTicks,rawCov);
 
     if (erro != 0){
+        Serial.println("deu ruim iniciar o sensor sgp40");
         return 0;
     }
 

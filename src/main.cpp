@@ -355,12 +355,12 @@ void initComponentes(){
     FALLING
   );
 
-  buzzer.init();
-  ledRgb.init();
+  // buzzer.init();
+  // ledRgb.init();
   scd41.init();
   sgp40.init();
   pmsa003.init();
-  displayOled.init();
+  // displayOled.init();
 }
 
 void setup() {
@@ -368,24 +368,17 @@ void setup() {
   Serial.begin(115200);
 
   if (memoria.existe("SSID") && memoria.existe("SENHA")) {
-
     String ssid = memoria.lerString("SSID");
     String senha = memoria.lerString("SENHA");
 
-    Serial.println(ssid);
-    Serial.println(senha);
-
-    conectado = accessPoint.conectar(
-      ssid.c_str(),
-      senha.c_str()
-    );
+    conectado = accessPoint.conectar(ssid, senha);
   }
-  
+
   if (!conectado) {
-    Serial.println("Entra ai: airshield.com <--------------------");
+    Serial.println("Acesse: airshield.com");
     accessPoint.initPortalCativo(ENDERECO_MAC);
     accessPoint.salvarCredenciaisRede();
-  } 
+  }
 
   nomeDispositivo = "airshield-" + String(ENDERECO_MAC);
   
@@ -397,11 +390,9 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  
-  if (apertouBotao){
-    silenciarBuzzer();
-  }
-
+  // if (apertouBotao){
+  //   silenciarBuzzer();
+  // }
   if (bluetooth.taConectado()){
 
     bluetooth.enviarMensagem(nomeDispositivo);
@@ -416,6 +407,7 @@ void loop() {
   if (!accessPoint.estaConectado()){
     Serial.println("Entra ai: airshield.com");
     accessPoint.initPortalCativo(ENDERECO_MAC);
+    accessPoint.salvarCredenciaisRede();
   }
 
   Telemetria telemetria = coletorTelemetria.coletarDados();

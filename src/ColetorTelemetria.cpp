@@ -20,7 +20,7 @@ Telemetria ColetorTelemetria::coletarDados(){
     // Serial.printf("Temperatura: %.1f\n C",telemetria.TEMPERATURA);
     // Serial.printf("Umidade: %.2f\n %%",telemetria.UMIDADE);
 
-    // Serial.printf("Indice COV: %d\n",telemetria.INDICE_COV); 
+    Serial.printf("Indice COV: %d\n",telemetria.INDICE_COV); 
 
     pmsa003.medir();    
     
