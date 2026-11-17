@@ -1,15 +1,14 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#include "AccessPointService.h"
 #include "MqttService.h"
-#include "MemoriaFlashService.h"
 #include "ColetorTelemetria.h"
 #include "Telemetria.h"
 #include "TelemetriaJsonBuilder.h"
 #include "IndiceQualidadeAr.h"
 #include "MonitorarQualidadeAmbiente.h"
 #include "BluetoothService.h"
+#include "WifiService.h"
 
 #include "Buzzer.h"
 #include "LedRgb.h"
@@ -31,9 +30,8 @@
 #define RX 16
 
 MqttService mqtt;
-AccessPointService accessPoint;
-#define ENDERECO_MAC accessPoint.getEnderecoMac()
-MemoriaFlashService memoria;
+WifiService wifiService;
+#define ENDERECO_MAC wifiService.getEnderecoMac()
 BluetoothService bluetooth;
 
 LedRgb ledRgb(GPIO_VERMELHO,GPIO_VERDE,GPIO_AZUL);
@@ -366,21 +364,17 @@ void initComponentes(){
 void setup() {
 
   Serial.begin(115200);
+  wifiService.init();
 
-  if (memoria.existe("SSID") && memoria.existe("SENHA")) {
-    String ssid = memoria.lerString("SSID");
-    String senha = memoria.lerString("SENHA");
+  bool conectado = wifiService.conectarWifi("UNIFOR");
 
-    conectado = accessPoint.conectar(ssid, senha);
+  if (conectado){
+    Serial.println("tá conectado");
+  } else {
+    Serial.println("n tá conectado");
   }
 
-  if (!conectado) {
-    Serial.println("Acesse: airshield.com");
-    accessPoint.initPortalCativo(ENDERECO_MAC);
-    accessPoint.salvarCredenciaisRede();
-  }
-
-  nomeDispositivo = "airshield-" + String(ENDERECO_MAC);
+  nomeDispositivo = "airshield-" + ENDERECO_MAC;
   
   bluetooth.init(nomeDispositivo);
   mqtt.init();
@@ -393,23 +387,6 @@ void loop() {
   // if (apertouBotao){
   //   silenciarBuzzer();
   // }
-  if (bluetooth.taConectado()){
-
-    bluetooth.enviarMensagem(nomeDispositivo);
-    Serial.println(nomeDispositivo);
-    Serial.println("ta indo o ble");
-  }
-
-  if (accessPoint.estaConectado() && !mqtt.estaConectado()){
-    mqtt.reconectar();
-  }
-
-  if (!accessPoint.estaConectado()){
-    Serial.println("Entra ai: airshield.com");
-    accessPoint.initPortalCativo(ENDERECO_MAC);
-    accessPoint.salvarCredenciaisRede();
-  }
-
   Telemetria telemetria = coletorTelemetria.coletarDados();
   IndicesQualidadeResultado indicesQualidadeResultado = indiceQualidadeAr.getIndicesQualidadeResulado();
   
@@ -417,9 +394,21 @@ void loop() {
   
   informacoesAmbienteDisplay(telemetria,indicesQualidadeResultado);
   
-  if (timerEnviarTelemetria() && accessPoint.estaConectado() && mqtt.estaConectado()){
+  if (timerEnviarTelemetria() && mqtt.estaConectado()){
     enviarTelemetria(telemetria,indicesQualidadeResultado);
   }
 
+  if (bluetooth.taConectado()){
+
+    bluetooth.enviarMensagem(nomeDispositivo);
+    Serial.println(nomeDispositivo);
+    Serial.println("ta indo o ble");
+  }
+  
+  if (!mqtt.estaConectado()){
+    mqtt.conectar();
+  }
+
   mqtt.loop();
+  wifiService.manterConexao();
 }
