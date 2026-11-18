@@ -19,20 +19,30 @@ void MqttService::init(){
     pubSubClient.setServer(MQTT_SERVER,MQTT_PORT);
     pubSubClient.setCallback(callback);
     pubSubClient.setBufferSize(1024);
+    pubSubClient.setSocketTimeout(3);
 }
 
 void MqttService::conectar(){
-    String client_id = "esp32-airshield ";
-    
+
+    String client_id = "esp32-airshield-";
     client_id += WiFi.macAddress();
-    Serial.printf("The client %s connects to the public MQTT broker\n", client_id.c_str());
-    
-    if (pubSubClient.connect(client_id.c_str(),"", "")) {
-        Serial.println("Public EMQX MQTT broker connected");
+
+    Serial.println("Tentando conectar ao MQTT...");
+
+    unsigned long inicio = millis();
+
+    if (pubSubClient.connect(client_id.c_str())) {
+
+        Serial.printf("MQTT conectado em %lu ms\n", millis() - inicio);
+
     } else {
-        Serial.print("failed with state ");
-        Serial.print(pubSubClient.state());
-        delay(2000);
+
+        Serial.printf(
+            "Falha MQTT. Estado: %d | Tempo: %lu ms\n",
+            pubSubClient.state(),
+            millis() - inicio
+        );
+
     }
 }
 
@@ -47,8 +57,11 @@ bool MqttService::estaConectado(){
 }
 
 void MqttService::loop(){
-    reconectar();
-    pubSubClient.loop();
+    if (pubSubClient.connected()) {
+        pubSubClient.loop();
+    } else {
+        reconectar();
+    }
 }
 
 void MqttService::pub(const char* topico,const char* payload){

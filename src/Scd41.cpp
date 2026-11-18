@@ -32,9 +32,9 @@ void Scd41::medir(){
         erro = scd41.readMeasurement(parametros.CO2,parametros.TEMPERATURA,parametros.UMIDADE);
 
         if (erro == 0){
-            Serial.printf("co2: %d\n",parametros.CO2);
-            Serial.printf("temperatura: %.2f\n",parametros.TEMPERATURA);
-            Serial.printf("umidade: %.2f\n",parametros.UMIDADE);
+            // Serial.printf("co2: %d\n",parametros.CO2);
+            // Serial.printf("temperatura: %.2f\n",parametros.TEMPERATURA);
+            // Serial.printf("umidade: %.2f\n",parametros.UMIDADE);
         }
     }
 }

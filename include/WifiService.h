@@ -1,18 +1,16 @@
 #pragma once
 
 #include <Arduino.h>
-#include <ESP32_CPWIFI.h>
 #include <WiFi.h>
 
 class WifiService {
 private:
-    String USUARIO = "";
-    String SENHA = "";
-    CPWIFI wifi;
 public:
-    WifiService(/* args */);
+    WifiService();
+
     void init();
     bool conectarWifi(const String& nomeRede);
+    bool conectarWifi(const String& nomeRede,const String& senhaRede);
     void manterConexao();
     String getEnderecoMac();
 };

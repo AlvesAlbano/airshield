@@ -345,6 +345,22 @@ void enviarTelemetria(Telemetria telemetria,IndicesQualidadeResultado indicesQua
 
 void initComponentes(){
   Wire.begin(I2C_SDA,I2C_SCL);
+
+  // Wire.setClock(100000);
+  // Serial.printf("SDA: %d\n", digitalRead(21));
+  // Serial.printf("SCL: %d\n", digitalRead(22));
+  // Serial.println("I2C iniciado!");
+
+  // pinMode(21, INPUT_PULLUP);
+  // pinMode(22, INPUT_PULLUP);
+  // delay(100);
+  // Serial.printf("SDA com pull-up: %d\n", digitalRead(21));
+  // Serial.printf("SCL com pull-up: %d\n", digitalRead(22));
+
+
+  delay(1000);
+
+  // scannerI2C();
   pinMode(GPIO_BOTAO,INPUT_PULLUP);
 
   attachInterrupt(
@@ -353,33 +369,62 @@ void initComponentes(){
     FALLING
   );
 
-  // buzzer.init();
-  // ledRgb.init();
+  buzzer.init();
+  ledRgb.init();
   scd41.init();
   sgp40.init();
   pmsa003.init();
-  // displayOled.init();
+  displayOled.init();
 }
 
 void setup() {
 
   Serial.begin(115200);
+
   wifiService.init();
-
   bool conectado = wifiService.conectarWifi("UNIFOR");
-
-  if (conectado){
-    Serial.println("tá conectado");
-  } else {
-    Serial.println("n tá conectado");
-  }
+  // bool conectado = wifiService.conectarWifi("Somanex Casa 11","23280915");
 
   nomeDispositivo = "airshield-" + ENDERECO_MAC;
-  
+
   bluetooth.init(nomeDispositivo);
-  mqtt.init();
-  
+
   initComponentes();
+
+  // Serial.println("==============================");
+  // Serial.println("IDENTIFICACAO AIRSHIELD");
+  // Serial.println("MAC WIFI: " + wifiService.getEnderecoMac());
+  // Serial.println("MAC BLE: " + bluetooth.getBluetoothMAC());
+  // Serial.println("NOME BLE: " + nomeDispositivo);
+  // Serial.println("==============================");
+  // WiFiClient teste;
+
+  // Serial.println("Testando TCP com broker.emqx.io...");
+
+  // if (teste.connect("broker.emqx.io", 1883)) {
+  //     Serial.println("TCP conectado ao broker!");
+  //     teste.stop();
+  // } else {
+  //     Serial.println("Falha na conexao TCP com broker!");
+  // }
+
+  if (conectado) {
+
+    Serial.println("Wi-Fi conectado!");
+
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+
+    Serial.print("RSSI: ");
+    Serial.println(WiFi.RSSI());
+
+    mqtt.init();
+    mqtt.conectar();
+
+  } else {
+
+    Serial.println("Falha no Wi-Fi!");
+  }
 }
 
 void loop() {
@@ -404,11 +449,36 @@ void loop() {
     Serial.println(nomeDispositivo);
     Serial.println("ta indo o ble");
   }
-  
-  if (!mqtt.estaConectado()){
-    mqtt.conectar();
-  }
 
   mqtt.loop();
   wifiService.manterConexao();
 }
+
+// #include <Arduino.h>
+
+// void setup() {
+//     Serial.begin(115200);
+//     delay(1000);
+
+//     pinMode(21, INPUT_PULLUP);
+//     delay(100);
+
+//     Serial.println("TESTE SDA");
+
+//     for (int i = 0; i < 10; i++) {
+//         Serial.println(digitalRead(21));
+//         delay(500);
+//     }
+
+//     pinMode(22, INPUT_PULLUP);
+//     delay(100);
+
+//     Serial.println("TESTE SCL");
+
+//     for (int i = 0; i < 10; i++) {
+//         Serial.println(digitalRead(22));
+//         delay(500);
+//     }
+// }
+
+// void loop() {}

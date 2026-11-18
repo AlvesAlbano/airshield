@@ -30,7 +30,7 @@ public:
 
 void BluetoothService::init(String nomeDispositivo) {
 
-    BLEDevice::init(nomeDispositivo.c_str());
+    BLEDevice::init("");
 
     server = BLEDevice::createServer();
 
@@ -48,9 +48,27 @@ void BluetoothService::init(String nomeDispositivo) {
 
     service->start();
 
-    server->getAdvertising()->start();
+    BLEAdvertising* advertising = BLEDevice::getAdvertising();
+
+    // Advertising principal: somente UUID.
+    BLEAdvertisementData advertisementData;
+    advertisementData.setCompleteServices(BLEUUID(SERVICE_UUID));
+
+    advertising->setAdvertisementData(advertisementData);
+
+    // Scan Response: nome completo.
+    BLEAdvertisementData scanResponseData;
+    scanResponseData.setName(nomeDispositivo);
+
+    advertising->setScanResponseData(scanResponseData);
+
+    advertising->setScanResponse(true);
+
+    advertising->start();
 
     Serial.println("Bluetooth iniciado!");
+    Serial.println("Nome BLE anunciado: " + nomeDispositivo);
+    Serial.println("MAC BLE: " + getBluetoothMAC());
 }
 
 String BluetoothService::getBluetoothMAC() {

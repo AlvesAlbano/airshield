@@ -1,31 +1,100 @@
 #include "WifiService.h"
 
-WifiService::WifiService(){
+WifiService::WifiService() {}
 
+void WifiService::init() {
+    WiFi.mode(WIFI_STA);
 }
 
-void WifiService::init(){
+bool WifiService::conectarWifi(const String& nomeRede) {
 
-// const uint8_t customMAC[6] = {
-//     0x02, 0xAB, 0xCD, 0x11, 0x22, 0x33
-// };
+    Serial.println("Conectando ao Wi-Fi: " + nomeRede);
 
-// memcpy(mac, customMAC, sizeof(customMAC));
-    wifi.setMAC(CPWIFI::MAC_REAL);
+    WiFi.disconnect(true);
+    delay(1000);
+
+    WiFi.mode(WIFI_STA);
+    WiFi.setSleep(false);
+
+    WiFi.begin(nomeRede.c_str());
+
+    unsigned long inicio = millis();
+
+    while (millis() - inicio < 30000) {
+
+        wl_status_t status = WiFi.status();
+
+        Serial.print("Status Wi-Fi: ");
+        Serial.println(status);
+
+        if (status == WL_CONNECTED) {
+
+            Serial.println("Conectado!");
+            Serial.println(WiFi.localIP());
+            Serial.println(WiFi.gatewayIP());
+
+            return true;
+        }
+
+        delay(1000);
+    }
+
+    Serial.println("Falha ao conectar.");
+    Serial.print("Status final: ");
+    Serial.println(WiFi.status());
+
+    return false;
 }
 
-bool WifiService::conectarWifi(const String& nomeRede){
-    return wifi.begin(
-        nomeRede.c_str(),
-        USUARIO.c_str(),
-        SENHA.c_str()
-    );
+bool WifiService::conectarWifi(const String& nomeRede,const String& senahRede) {
+
+    Serial.println("Conectando ao Wi-Fi: " + nomeRede);
+
+    WiFi.disconnect(true);
+    delay(1000);
+
+    WiFi.mode(WIFI_STA);
+    WiFi.setSleep(false);
+
+    WiFi.begin(nomeRede.c_str(),senahRede.c_str());
+
+    unsigned long inicio = millis();
+
+    while (millis() - inicio < 30000) {
+
+        wl_status_t status = WiFi.status();
+
+        Serial.print("Status Wi-Fi: ");
+        Serial.println(status);
+
+        if (status == WL_CONNECTED) {
+
+            Serial.println("Conectado!");
+            Serial.println(WiFi.localIP());
+            Serial.println(WiFi.gatewayIP());
+
+            return true;
+        }
+
+        delay(1000);
+    }
+
+    Serial.println("Falha ao conectar.");
+    Serial.print("Status final: ");
+    Serial.println(WiFi.status());
+
+    return false;
 }
 
-void WifiService::manterConexao(){
-    wifi.maintain();
+void WifiService::manterConexao() {
+
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("Wi-Fi desconectado. Reconectando...");
+
+        WiFi.reconnect();
+    }
 }
 
-String WifiService::getEnderecoMac(){
+String WifiService::getEnderecoMac() {
     return WiFi.macAddress();
 }

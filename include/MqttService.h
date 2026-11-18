@@ -8,8 +8,8 @@ class MqttService {
 private:
     WiFiClient wifiClient; 
     PubSubClient pubSubClient;
-
-    const char* MQTT_SERVER = "broker.emqx.io";
+    const char* MQTT_SERVER = "broker.hivemq.com";
+    // const char* MQTT_SERVER = "broker.emqx.io";
     const int MQTT_PORT = 1883;
 public:
     MqttService();
