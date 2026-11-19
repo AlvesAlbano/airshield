@@ -4,15 +4,17 @@ void IndiceQualidadeAr::calcularIndiceUmidade(float UMIDADE){
     
     // https://www.terra.com.br/noticias/climatempo/como-a-variacao-da-umidade-no-ar-interfere-na-nossa-saude,0d6b5d0e67cb262a83ea099d4cc40720qfouszs2.html
 
-    if (UMIDADE < 30){
+    if (UMIDADE < 2.00){
         indicesQualidadeResultado.QUALIDADE_UMIDADE = MUITO_RUIM;
-    } else if (UMIDADE < 35){
+    } else if (UMIDADE < 30.0){
         indicesQualidadeResultado.QUALIDADE_UMIDADE = RUIM;
-    } else if (UMIDADE <= 65) {
-        indicesQualidadeResultado.QUALIDADE_UMIDADE = BOA;
-    } else if (UMIDADE <= 70) {
+    } else if (UMIDADE < 40.0) {
         indicesQualidadeResultado.QUALIDADE_UMIDADE = MODERADA;
-    } else if (UMIDADE <= 80) {
+    } else if (UMIDADE <= 60.0) {
+        indicesQualidadeResultado.QUALIDADE_UMIDADE = BOA;
+    } else if (UMIDADE <= 70.0) {
+        indicesQualidadeResultado.QUALIDADE_UMIDADE = MODERADA;
+    } else if (UMIDADE <= 80.0) {
         indicesQualidadeResultado.QUALIDADE_UMIDADE = RUIM;
     } else {
         indicesQualidadeResultado.QUALIDADE_UMIDADE = MUITO_RUIM;
@@ -29,7 +31,7 @@ void IndiceQualidadeAr::calcularIndiceCo2(uint16_t CO2) {
     } else if (CO2 <= 5000) {
         indicesQualidadeResultado.QUALIDADE_CO2 = RUIM;
     } else {
-        indicesQualidadeResultado.QUALIDADE_CO2 = PESSIMA;
+        indicesQualidadeResultado.QUALIDADE_CO2 = MUITO_RUIM;
     }
 }
 
@@ -37,11 +39,11 @@ void IndiceQualidadeAr::calcularIndiceCov(int32_t INDICE_COV) {
     // https://sensirion.com/media/documents/ACD82D45/6294DFC0/Info_Note_Integration_VOC_NOx_Sensor.pdf
 
     // https://sensirion.com/media/documents/0D0C9129/623B1183/Sensirion_CO2_Sensors_SCD4x_design-in_guide.pdf
-    if (INDICE_COV <= 150) {
+    if (INDICE_COV <= 100) {
         indicesQualidadeResultado.QUALIDADE_COV = BOA;
-    } else if (INDICE_COV <= 250) {
+    } else if (INDICE_COV <= 150) {
         indicesQualidadeResultado.QUALIDADE_COV = MODERADA;
-    } else if (INDICE_COV <= 400) {
+    } else if (INDICE_COV <= 250) {
         indicesQualidadeResultado.QUALIDADE_COV = RUIM;
     } else {
         indicesQualidadeResultado.QUALIDADE_COV = MUITO_RUIM;
